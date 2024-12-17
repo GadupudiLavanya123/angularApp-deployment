@@ -1,0 +1,56 @@
+name: IIS server deployment
+on:
+  push:
+    branches:
+      - dev  # Trigger deployment when changes are pushed to the 'dev' branch
+
+jobs:
+  deploy:
+    runs-on: windows-latest  # Use a Windows runner for IIS deployment
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Step 2: Set up Node.js (for building the Angular app)
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # Use the Node.js version compatible with your Angular app
+
+      # Step 3: Install Angular CLI and dependencies
+      - name: Install dependencies
+        run: |
+          npm install -g @angular/cli
+          npm ci
+
+      # Step 4: Build the Angular application
+      - name: Build Angular app
+        run: ng build --configuration production  # Adjust the build configuration as needed
+
+      # Step 5: Copy files to IIS server
+      - name: Deploy to IIS server
+        run: |
+          $errorActionPreference = "Stop"
+
+          # Set IIS server details
+          $server = " 192.168.0.103"  # Replace with your IIS server's IP address
+          $username = "Lavanya Gadupudi"  # Replace with your username
+          $password = "${{ secrets.IIS_PASSWORD }}"  # Store your password as a secret in GitHub
+          $sourceDir = "$(System.DefaultWorkingDirectory)/dist/my-angular9-app"  # Path to the built Angular app
+          $destinationDir = "C:\inetpub\wwwroot\my-angular9-app"  # Replace with your IIS site directory
+
+          # Create a credential object
+          $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+          $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
+
+          # Copy files to the IIS server using SMB
+          Copy-Item -Path $sourceDir\* -Destination "\\$server\$destinationDir" -Recurse -Force
+
+      # Step 6: Restart IIS (optional but recommended)
+      - name: Restart IIS
+        run: |
+          Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
+            Restart-Service -Name "W3SVC"  # Restart IIS web server
+          }
