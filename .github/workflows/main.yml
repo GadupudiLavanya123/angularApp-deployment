@@ -52,5 +52,5 @@ jobs:
       - name: Restart IIS
         run: |
           Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
-            Restart-Service -Name "W3SVC"  # Restart IIS web server
+            Restart-Service -Name "W3SVC"  # Restart IIS server
           }
