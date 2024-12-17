@@ -1,4 +1,4 @@
-name: IIS server deployment
+name: IIS server Deployment
 on:
   push:
     branches:
