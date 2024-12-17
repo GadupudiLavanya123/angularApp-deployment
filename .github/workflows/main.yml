@@ -1,4 +1,5 @@
 name: IIS server to Angular Deployment
+
 on:
   push:
     branches:
@@ -17,40 +18,39 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'  # Use the Node.js version compatible with your Angular app
+          node-version: '16'  # Use Node.js version 16 (temporary fix)
 
       # Step 3: Install Angular CLI and dependencies
       - name: Install dependencies
         run: |
-          npm install -g @angular/cli
-          npm ci
+          npm install -g @angular/cli  # Install Angular CLI globally
+          npm ci  # Clean install of dependencies (preferred over npm install in CI environments)
 
       # Step 4: Build the Angular application
       - name: Build Angular app
-        run: ng build --configuration production  # Adjust the build configuration as needed
+        run: ng build --configuration production  # Build the Angular app for production
 
       # Step 5: Copy files to IIS server
       - name: Deploy to IIS server
         run: |
           $errorActionPreference = "Stop"
-
           # Set IIS server details
-          $server = " 192.168.0.103"  # Replace with your IIS server's IP address
-          $username = "Lavanya Gadupudi"  # Replace with your username
-          $password = "${{ secrets.IIS_PASSWORD }}"  # Store your password as a secret in GitHub
+          $server = "192.168.0.103"  # Replace with your IIS server's IP address
+          $username = "Lavanya Gadupudi"  # Replace with your IIS server's username (if different)
+          $password = "${{ secrets.IIS_PASSWORD }}"  # Store your IIS password securely in GitHub secrets
           $sourceDir = "$(System.DefaultWorkingDirectory)/dist/my-angular9-app"  # Path to the built Angular app
-          $destinationDir = "C:\inetpub\wwwroot\my-angular9-app"  # Replace with your IIS site directory
+          $destinationDir = "C:\inetpub\wwwroot\my-angular9-app"  # IIS directory to copy files to
 
-          # Create a credential object
+          # Create a credential object for authentication
           $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
           $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
 
-          # Copy files to the IIS server using SMB
+          # Copy files from the Angular build directory to the IIS directory using SMB
           Copy-Item -Path $sourceDir\* -Destination "\\$server\$destinationDir" -Recurse -Force
 
       # Step 6: Restart IIS (optional but recommended)
       - name: Restart IIS
         run: |
           Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
-            Restart-Service -Name "W3SVC"  # Restart IIS server
+            Restart-Service -Name "W3SVC"  # Restart IIS server (W3SVC is the IIS service name)
           }
