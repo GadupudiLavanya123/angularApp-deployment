@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: windows-latest  # Use a Windows runner for IIS deployment
+    runs-on: windows-latest  # Using a Windows runner for IIS deployment
 
     steps:
       # Step 1: Checkout the code
