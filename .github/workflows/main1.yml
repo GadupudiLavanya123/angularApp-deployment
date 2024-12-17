@@ -1,4 +1,4 @@
-name: IIS server Deployment
+name: IIS server to angular Deployment
 on:
   push:
     branches:
