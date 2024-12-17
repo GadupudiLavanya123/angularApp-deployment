@@ -27,7 +27,7 @@ jobs:
 
       # Step 4: Build the Angular application
       - name: Build Angular app
-        run: ng build --configuration production  # Adjust the build configuration as needed
+        run: ng build --configuration production  # Adjust the build configuration as need
 
       # Step 5: Copy files to IIS server
       - name: Deploy to IIS server
