@@ -3,7 +3,7 @@ name: IIS server to Angular Deployment
 on:
   push:
     branches:
-      - dev  # Trigger deployment when changes are pushed to the 'dev' branch
+      - dev  # Trigger deployment when changes are pushed to the 'dev' Branch
 
 jobs:
   deploy:
