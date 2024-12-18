@@ -10,27 +10,24 @@ jobs:
     runs-on: windows-latest  # Using a Windows runner for IIS deployment
 
     steps:
-      # Step 1: Checkout the code
-      - name: Checkout code
-        uses: actions/checkout@v2
+      # Step 1: Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-      # Step 2: Set up Node.js (for building the Angular app)
-      - name: Setup Node.js
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18.19'  # Use Node.js version 18.19 or higher (temporary fix)
+          node-version: 18  # Ensure this matches your project's Node.js version
 
-      # Step 3: Install Angular CLI and dependencies
-      - name: Install dependencies
-        run: |
-          npm install -g @angular/cli  # Install Angular CLI globally
-          npm ci  # Clean install of dependencies (preferred over npm install in CI environments)
+      # Step 3: Install Dependencies and Build Angular App
+      - name: Install Dependencies
+        run: npm install
 
-      # Step 4: Build the Angular application
-      - name: Build Angular app
-        run: ng build --configuration production  # Build the Angular app for production
+      - name: Build Angular App
+        run: npm run build -- --configuration=production
 
-      # Step 5: Copy files to IIS server
+      # Step 4: Copy files to IIS server
       - name: Deploy to IIS server
         run: |
           $errorActionPreference = "Stop"
@@ -46,7 +43,7 @@ jobs:
           # Copy files from the Angular build directory to the IIS directory using SMB
           Copy-Item -Path $sourceDir\* -Destination "\\$server\$destinationDir" -Recurse -Force
 
-      # Step 6: Restart IIS (optional but recommended)
+      # Step 5: Restart IIS (optional but recommended)
       - name: Restart IIS
         run: |
           Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
