@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'  # Use Node.js version 16 (temporary fix)
+          node-version: '18.19'  # Use Node.js version 18.19 or higher (temporary fix)
 
       # Step 3: Install Angular CLI and dependencies
       - name: Install dependencies
@@ -40,11 +40,9 @@ jobs:
           $password = "${{ secrets.IIS_PASSWORD }}"  # Store your IIS password securely in GitHub secrets
           $sourceDir = "$(System.DefaultWorkingDirectory)/dist/my-angular9-app"  # Path to the built Angular app
           $destinationDir = "C:\inetpub\wwwroot\my-angular9-app"  # IIS directory to copy files to
-
           # Create a credential object for authentication
           $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
           $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
-
           # Copy files from the Angular build directory to the IIS directory using SMB
           Copy-Item -Path $sourceDir\* -Destination "\\$server\$destinationDir" -Recurse -Force
 
