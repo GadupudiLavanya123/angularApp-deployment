@@ -40,20 +40,25 @@ jobs:
 
           # Paths for source and destination
           $sourceDir = "${{ github.workspace }}\dist\my-angular9-app"  # Local build directory
-          $destinationDir = "\\$server\wwwroot-share"  # Network share of IIS folder
+          $destinationDir = "Z:\inetpub\wwwroot\my-angular9-app"  # Mounted drive for IIS directory
           
           # Create a credential object for authentication
           $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
           $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
-          
-          # Test the share connectivity
-          Test-Path $destinationDir -Credential $credential
-          if (-not (Test-Path $destinationDir -Credential $credential)) {
-            Write-Error "The destination network share is not accessible: $destinationDir"
+
+          # Mount a network drive for the destination folder
+          New-PSDrive -Name Z -PSProvider FileSystem -Root "\\$server\wwwroot-share" -Credential $credential -Persist
+
+          # Ensure the destination directory exists
+          if (-not (Test-Path -Path $destinationDir)) {
+            New-Item -ItemType Directory -Path $destinationDir
           }
 
           # Copy files from the Angular build directory to the IIS directory
-          Copy-Item -Path "$sourceDir\*" -Destination $destinationDir -Recurse -Force -Credential $credential
+          Copy-Item -Path "$sourceDir\*" -Destination $destinationDir -Recurse -Force
+          
+          # Unmount the network drive after deployment
+          Remove-PSDrive -Name Z -Force
           
       # Step 5: Restart IIS (optional but recommended)
       - name: Restart IIS
