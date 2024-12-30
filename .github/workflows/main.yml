@@ -3,7 +3,7 @@ name: IIS server to Angular Deployment
 on:
   push:
     branches:
-      - dev  # Trigger deployment when changes are pushed to the 'dev' Branch
+      - dev  # Trigger deployment when changes are pushed to the 'dev' branch
 
 jobs:
   deploy:
@@ -18,7 +18,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16 # Ensure this matches your project's Node.js version
+          node-version: 16  # Ensure this matches your project's Node.js version
 
       # Step 3: Install Dependencies and Build Angular App
       - name: Install Dependencies
@@ -32,26 +32,44 @@ jobs:
         shell: pwsh
         run: |
           $errorActionPreference = "Stop"
+          
           # Set IIS server details
           $server = "192.168.0.103"  # Replace with your IIS server's IP address
-          $username = "Lavanya Gadupudi"  # Replace with your IIS server's username (if different)
-          $password = "${{ secrets.IIS_PASSWORD }}"  # Store your IIS password securely in GitHub secrets
-          
-          # Use the environment variable for the working directory
-          $sourceDir = "${{ github.workspace }}/dist/my-angular9-app"  # Path to the built Angular app
-          $destinationDir = "C:\inetpub\wwwroot\my-angular9-app"  # IIS directory to copy files to
+          $username = "Lavanya Gadupudi"  # Replace with your IIS server's username
+          $password = "${{ secrets.IIS_PASSWORD }}"  # Store IIS password securely in GitHub secrets
+
+          # Paths for source and destination
+          $sourceDir = "${{ github.workspace }}\dist\my-angular9-app"  # Local build directory
+          $destinationDir = "\\$server\wwwroot-share"  # Network share of IIS folder
           
           # Create a credential object for authentication
           $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
           $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
           
-          # Copy files from the Angular build directory to the IIS directory using SMB
-          Copy-Item -Path "$sourceDir\*" -Destination "\\$server\$destinationDir" -Recurse -Force
+          # Test the share connectivity
+          Test-Path $destinationDir -Credential $credential
+          if (-not (Test-Path $destinationDir -Credential $credential)) {
+            Write-Error "The destination network share is not accessible: $destinationDir"
+          }
 
+          # Copy files from the Angular build directory to the IIS directory
+          Copy-Item -Path "$sourceDir\*" -Destination $destinationDir -Recurse -Force -Credential $credential
+          
       # Step 5: Restart IIS (optional but recommended)
       - name: Restart IIS
         shell: pwsh
         run: |
+          $errorActionPreference = "Stop"
+
+          $server = "192.168.0.103"  # Replace with your IIS server's IP address
+          $username = "Lavanya Gadupudi"  # Replace with your IIS server's username
+          $password = "${{ secrets.IIS_PASSWORD }}"  # Store IIS password securely in GitHub secrets
+          
+          # Create a credential object
+          $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+          $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
+          
+          # Restart IIS service on the server
           Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
-            Restart-Service -Name "W3SVC"  # Restart IIS server (W3SVC is the IIS service name)
+            Restart-Service -Name "W3SVC"  # IIS service name
           }
