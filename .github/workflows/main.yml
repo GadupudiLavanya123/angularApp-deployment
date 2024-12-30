@@ -29,22 +29,28 @@ jobs:
 
       # Step 4: Copy files to IIS server
       - name: Deploy to IIS server
+        shell: pwsh
         run: |
           $errorActionPreference = "Stop"
           # Set IIS server details
           $server = "192.168.0.103"  # Replace with your IIS server's IP address
           $username = "Lavanya Gadupudi"  # Replace with your IIS server's username (if different)
           $password = "${{ secrets.IIS_PASSWORD }}"  # Store your IIS password securely in GitHub secrets
-          $sourceDir = "$(System.DefaultWorkingDirectory)/dist/my-angular9-app"  # Path to the built Angular app
+          
+          # Use the environment variable for the working directory
+          $sourceDir = "${{ github.workspace }}/dist/my-angular9-app"  # Path to the built Angular app
           $destinationDir = "C:\inetpub\wwwroot\my-angular9-app"  # IIS directory to copy files to
+          
           # Create a credential object for authentication
           $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
           $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
+          
           # Copy files from the Angular build directory to the IIS directory using SMB
-          Copy-Item -Path $sourceDir\* -Destination "\\$server\$destinationDir" -Recurse -Force
+          Copy-Item -Path "$sourceDir\*" -Destination "\\$server\$destinationDir" -Recurse -Force
 
       # Step 5: Restart IIS (optional but recommended)
       - name: Restart IIS
+        shell: pwsh
         run: |
           Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
             Restart-Service -Name "W3SVC"  # Restart IIS server (W3SVC is the IIS service name)
