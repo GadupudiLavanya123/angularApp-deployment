@@ -27,12 +27,12 @@ jobs:
       - name: Build Angular App
         run: npm run build -- --configuration=production
 
-      # Step 4: Copy files to IIS server
+      # Step 4: Copy files to IIS server and configure IIS site
       - name: Deploy to IIS server
         shell: pwsh
         run: |
           $errorActionPreference = "Stop"
-          
+
           # Set IIS server details
           $server = "192.168.0.103"  # Replace with your IIS server's IP address
           $username = "Lavanya Gadupudi"  # Replace with your IIS server's username
@@ -40,41 +40,41 @@ jobs:
 
           # Paths for source and destination
           $sourceDir = "${{ github.workspace }}\dist\my-angular9-app"  # Local build directory
-          $destinationDir = "Z:\inetpub\wwwroot\my-angular9-app"  # Mounted drive for IIS directory
-          
-          # Create a credential object for authentication
+          $destinationDir = "C:\inetpub\wwwroot\my-angular9-app"  # IIS physical directory path
+
+          # Create a secure credential object
           $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
           $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
 
-          # Mount a network drive for the destination folder
-          New-PSDrive -Name Z -PSProvider FileSystem -Root "\\$server\wwwroot-share" -Credential $credential -Persist
+          # Copy files to the IIS server
+          Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
+            param($sourceDir, $destinationDir)
 
-          # Ensure the destination directory exists
-          if (-not (Test-Path -Path $destinationDir)) {
-            New-Item -ItemType Directory -Path $destinationDir
-          }
+            # Ensure the destination directory exists
+            if (-not (Test-Path -Path $destinationDir)) {
+              New-Item -ItemType Directory -Path $destinationDir -Force
+            }
 
-          # Copy files from the Angular build directory to the IIS directory
-          Copy-Item -Path "$sourceDir\*" -Destination $destinationDir -Recurse -Force
+            # Copy files from source to destination
+            Copy-Item -Path "$sourceDir\*" -Destination $destinationDir -Recurse -Force
+          } -ArgumentList $sourceDir, $destinationDir
           
-          # Unmount the network drive after deployment
-          Remove-PSDrive -Name Z -Force
-          
-      # Step 5: Restart IIS (optional but recommended)
+      # Step 5: Restart IIS
       - name: Restart IIS
         shell: pwsh
         run: |
           $errorActionPreference = "Stop"
 
+          # Set IIS server details
           $server = "192.168.0.103"  # Replace with your IIS server's IP address
           $username = "Lavanya Gadupudi"  # Replace with your IIS server's username
           $password = "${{ secrets.IIS_PASSWORD }}"  # Store IIS password securely in GitHub secrets
-          
-          # Create a credential object
+
+          # Create a secure credential object
           $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
           $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
-          
+
           # Restart IIS service on the server
           Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
-            Restart-Service -Name "W3SVC"  # IIS service name
+            Restart-Service -Name "W3SVC"  # Restart IIS web service
           }
