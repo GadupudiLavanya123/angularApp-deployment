@@ -46,8 +46,8 @@ jobs:
           $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
           $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
 
-          # Copy files to the IIS server
-          Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
+          # Use HTTP transport instead of HTTPS
+          Invoke-Command -ComputerName $server -Credential $credential -Authentication Negotiate -ScriptBlock {
             param($sourceDir, $destinationDir)
 
             # Ensure the destination directory exists
@@ -75,6 +75,6 @@ jobs:
           $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
 
           # Restart IIS service on the server
-          Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
+          Invoke-Command -ComputerName $server -Credential $credential -Authentication Negotiate -ScriptBlock {
             Restart-Service -Name "W3SVC"  # Restart IIS web service
-          }
+          } 
