@@ -3,14 +3,14 @@ name: Deploy Angular App to IIS
 on:
   push:
     branches:
-      - dev  # Trigger deployment when changes are pushed to 'dev' branch
+      - dev
 
 jobs:
   deploy:
-    runs-on: windows-latest  # Use Windows runner for IIS deployment
+    runs-on: windows-latest
 
     steps:
-      # Step 1: Checkout code
+      # Step 1: Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v3
 
@@ -27,54 +27,38 @@ jobs:
       - name: Build Angular App
         run: npm run build -- --configuration=production
 
-      # Step 4: Deploy files to IIS server
-      - name: Deploy to IIS Server
+      # Step 4: Transfer Files to IIS Server
+      - name: Copy Files to IIS Server
+        run: |
+          $env:SERVER_IP = "192.168.0.103"
+          $env:USERNAME = "Administrator" # Replace with your server username
+          $env:PASSWORD = "${{ secrets.IIS_PASSWORD }}" # Store password securely in GitHub Secrets
+          $env:SOURCE_DIR = "${{ github.workspace }}\\dist\\my-angular9-app"
+          $env:DESTINATION_DIR = "C:\\inetpub\\wwwroot\\my-angular9-app"
+
+          # Use PSCP (part of PuTTY) for secure file transfer
+          # Download PuTTY tools if needed
+          Invoke-WebRequest -Uri "https://the.earth.li/~sgtatham/putty/latest/w64/pscp.exe" -OutFile "pscp.exe"
+
+          # Use pscp to copy files securely
+          .\pscp.exe -r -pw $env:PASSWORD $env:SOURCE_DIR/* $env:USERNAME@$env:SERVER_IP:$env:DESTINATION_DIR
+
+      # Step 5: Restart IIS on the remote server
+      - name: Restart IIS on IIS Server
         shell: pwsh
         run: |
           $errorActionPreference = "Stop"
 
           # Set server details
           $server = "192.168.0.103"
-          $username = "Administrator" # Replace with your server username
-          $password = "${{ secrets.IIS_PASSWORD }}"  # Set password as a secret in GitHub
+          $username = "Administrator"  # Replace with your server username
+          $password = "${{ secrets.IIS_PASSWORD }}"  # Store password securely in GitHub Secrets
 
-          # Paths for deployment
-          $sourceDir = "${{ github.workspace }}\dist\my-angular9-app"  # Adjust to your build output folder
-          $destinationDir = "C:\inetpub\wwwroot\my-angular9-app"
-
-          # Add server to TrustedHosts
-          Set-Item WSMan:\localhost\Client\TrustedHosts -Value $server -Force
-
-          # Create credentials
+          # Create a secure credential object
           $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
           $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
 
-          # Ensure remote destination exists and copy files
-          Invoke-Command -ComputerName $server -Credential $credential -Authentication Basic -ScriptBlock {
-            param($sourceDir, $destinationDir)
-
-            if (-not (Test-Path -Path $destinationDir)) {
-              New-Item -ItemType Directory -Path $destinationDir -Force
-            }
-            Copy-Item -Path "$using:sourceDir\*" -Destination $destinationDir -Recurse -Force
-          }
-
-      # Step 5: Restart IIS to apply changes
-      - name: Restart IIS
-        shell: pwsh
-        run: |
-          $errorActionPreference = "Stop"
-
-          # Set server details
-          $server = "192.168.0.103"
-          $username = "Administrator" # Replace with your server username
-          $password = "${{ secrets.IIS_PASSWORD }}"  # Set password as a secret in GitHub
-
-          # Create credentials
-          $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-          $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
-
-          # Restart IIS service
-          Invoke-Command -ComputerName $server -Credential $credential -Authentication Basic -ScriptBlock {
+          # Restart IIS service on the remote server
+          Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
             Restart-Service -Name "W3SVC"
           }
