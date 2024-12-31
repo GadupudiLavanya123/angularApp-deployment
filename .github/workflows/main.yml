@@ -31,7 +31,7 @@ jobs:
       - name: Copy Files to IIS Server
         run: |
           $env:SERVER_IP = "192.168.0.103"
-          $env:USERNAME = "Administrator" # Replace with your server username
+          $env:USERNAME = "lavig" # Replace with your server username
           $env:PASSWORD = "${{ secrets.IIS_PASSWORD }}" # Store password securely in GitHub Secrets
           $env:SOURCE_DIR = "${{ github.workspace }}\\dist\\my-angular9-app"
           $env:DESTINATION_DIR = "C:\\inetpub\\wwwroot\\my-angular9-app"
