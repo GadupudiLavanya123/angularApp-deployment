@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout code
+    # Step 1: Checkout the code
     - name: Checkout code
       uses: actions/checkout@v3
 
@@ -27,14 +27,7 @@ jobs:
     - name: Build Angular app
       run: npm run build -- --prod
 
-    # Step 4: Install pywinrm (WinRM client)
-    - name: Install pywinrm
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3-pip
-        pip3 install pywinrm
-
-    # Step 5: Deploy to IIS Server using WinRM
+    # Step 4: Deploy files using SMB
     - name: Deploy to IIS server
       env:
         IIS_SERVER_IP: ${{ secrets.IIS_SERVER_IP }}
@@ -44,25 +37,18 @@ jobs:
       run: |
         echo "Deploying to IIS server at $IIS_SERVER_IP..."
 
-        # Python script to deploy files using WinRM
-        python3 - <<'EOF'
-        import winrm
-        import os
+        # Install Samba client
+        sudo apt-get update
+        sudo apt-get install -y smbclient
 
-        # Define the IIS server credentials and path
-        IIS_SERVER = os.getenv('IIS_SERVER_IP')
-        IIS_USER = os.getenv('IIS_USER')
-        IIS_PASSWORD = os.getenv('IIS_PASSWORD')
-        DEPLOY_PATH = os.getenv('IIS_DEPLOY_PATH')
+        # Mount the shared folder
+        echo "$IIS_PASSWORD" | smbclient $IIS_DEPLOY_PATH -U $IIS_USER -c "
+          del *;
+          mput dist/my-angular9-app/*;
+        "
 
-        # Create the WinRM session to the IIS server
-        session = winrm.Session(f'http://{IIS_SERVER}:5985/wsman', auth=(IIS_USER, IIS_PASSWORD))
-
-        # Copy the build files to the IIS server
-        copy_command = f'Copy-Item -Path "./dist/my-angular9-app/*" -Destination "{DEPLOY_PATH}" -Recurse -Force'
-        session.run_ps(copy_command)
-
-        # Restart IIS service
-        restart_command = 'iisreset'
-        session.run_ps(restart_command)
-        EOF
+    # Step 5: Restart IIS service using HTTP call or custom script
+    - name: Restart IIS
+      run: |
+        echo "Restarting IIS service..."
+        curl -X POST "http://$IIS_SERVER_IP:5000/restart"
