@@ -10,49 +10,46 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout the code
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Step 2: Set up Node.js
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
 
-    # Step 3: Install dependencies and build Angular project
-    - name: Install dependencies
-      run: npm install
+      # Step 3: Install dependencies and build Angular project
+      - name: Install dependencies
+        run: npm install
 
-    - name: Build Angular app
-      run: npm run build -- --prod
+      - name: Build Angular app
+        run: npm run build -- --prod
 
-    # Step 4: Deploy files using SMB
-    - name: Deploy to IIS server
-      env:
-        IIS_SERVER_IP: ${{ secrets.IIS_SERVER_IP }}
-        IIS_USER: ${{ secrets.IIS_USER }}
-        IIS_PASSWORD: ${{ secrets.IIS_PASSWORD }}
-        IIS_DEPLOY_PATH: ${{ secrets.IIS_DEPLOY_PATH }}
-      run: |
-        echo "Deploying to IIS server at $IIS_SERVER_IP..."
+      # Step 4: Deploy to IIS using PowerShell Remoting
+      - name: Deploy to IIS server
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $Server = 'LAPTOP-AL3ULK55'
+            $DeployPath = 'C:\inetpub\wwwroot\my-angular9-app'
+            $BuildPath = 'dist/my-angular9-app'
 
-        # Show environment variables for debugging
-        echo "Deployment Path: $IIS_DEPLOY_PATH"
+            Write-Host "Connecting to IIS server at $Server..."
 
-        # Install Samba client
-        sudo apt-get update
-        sudo apt-get install -y smbclient
+            # Clear existing files
+            Invoke-Command -ComputerName $Server -ScriptBlock {
+              param ($DeployPath)
+              Remove-Item -Recurse -Force -Path $DeployPath\*
+            } -ArgumentList $DeployPath
 
-        # List files to be deployed
-        echo "Files to deploy:"
-        ls dist/my-angular9-app
+            # Copy new files
+            Invoke-Command -ComputerName $Server -ScriptBlock {
+              param ($DeployPath, $BuildPath)
+              New-Item -ItemType Directory -Path $DeployPath -Force
+              Copy-Item -Path $BuildPath\* -Destination $DeployPath -Recurse
+            } -ArgumentList $DeployPath, $BuildPath
 
-        # Test SMB connection (without modifying files))
-        echo "$IIS_PASSWORD" | smbclient $IIS_DEPLOY_PATH -U $IIS_USER -c "ls"
-
-        # Deploy files
-        echo "$IIS_PASSWORD" | smbclient $IIS_DEPLOY_PATH -U $IIS_USER -c "
-          del *;
-          mput dist/my-angular9-app/*;
-        "
+            # Restart IIS
+            Invoke-Command -ComputerName $Server -ScriptBlock { iisreset }
