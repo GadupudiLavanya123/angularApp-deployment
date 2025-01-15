@@ -27,10 +27,11 @@ jobs:
       - name: Build Angular app
         run: npm run build -- --prod
 
-      # Step 4: Deploy to IIS using PowerShell Remoting
+      # Step 4: Deploy to IIS server using PowerShell
       - name: Deploy to IIS server
         uses: azure/powershell@v1
         with:
+          azPSVersion: '7.5.0' # Specify the Azure PowerShell version
           inlineScript: |
             $Server = 'LAPTOP-AL3ULK55'
             $DeployPath = 'C:\inetpub\wwwroot\my-angular9-app'
@@ -53,3 +54,5 @@ jobs:
 
             # Restart IIS
             Invoke-Command -ComputerName $Server -ScriptBlock { iisreset }
+        errorActionPreference: Stop
+        failOnStandardError: false
