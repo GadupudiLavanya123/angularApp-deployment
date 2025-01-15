@@ -1,57 +1,37 @@
-name: Deploy Angular to IIS Server
+name: Deploy to IIS
 
 on:
   push:
     branches:
-      - main
+      - main  # Deploy when changes are pushed to the main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the code
-      - name: Checkout code
-        uses: actions/checkout@v3
+    # Checkout the code
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      # Step 2: Set up Node.js
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
+    # Set up SSH key for authentication
+    - name: Set up SSH key
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # Step 3: Install dependencies and build Angular project
-      - name: Install dependencies
-        run: npm install
+    # Install Angular CLI and build the app
+    - name: Install Angular CLI
+      run: |
+        npm install -g @angular/cli
 
-      - name: Build Angular app
-        run: npm run build -- --prod
+    - name: Build the Angular app
+      run: |
+        npm install
+        ng build --prod
 
-      # Step 4: Deploy to IIS server using PowerShell
-      - name: Deploy to IIS server
-        uses: azure/powershell@v1
-        with:
-          azPSVersion: '7.5.0' # Specify the Azure PowerShell version
-          inlineScript: |
-            $Server = 'LAPTOP-AL3ULK55'
-            $DeployPath = 'C:\inetpub\wwwroot\my-angular9-app'
-            $BuildPath = 'dist/my-angular9-app'
-
-            Write-Host "Connecting to IIS server at $Server..."
-
-            # Clear existing files
-            Invoke-Command -ComputerName $Server -ScriptBlock {
-              param ($DeployPath)
-              Remove-Item -Recurse -Force -Path $DeployPath\*
-            } -ArgumentList $DeployPath
-
-            # Copy new files
-            Invoke-Command -ComputerName $Server -ScriptBlock {
-              param ($DeployPath, $BuildPath)
-              New-Item -ItemType Directory -Path $DeployPath -Force
-              Copy-Item -Path $BuildPath\* -Destination $DeployPath -Recurse
-            } -ArgumentList $DeployPath, $BuildPath
-
-            # Restart IIS
-            Invoke-Command -ComputerName $Server -ScriptBlock { iisreset }
-     
+    # Deploy the Angular app to IIS server via SSH
+    - name: Deploy to IIS Server
+      run: |
+        ssh -o StrictHostKeyChecking=no lavig@laptop-al3ulk55 "mkdir -p C:/inetpub/wwwroot/my-angular-app"
+        scp -r ./dist/* lavig@laptop-al3ulk55:C:/inetpub/wwwroot/my-angular-app/
