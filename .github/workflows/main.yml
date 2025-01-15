@@ -48,7 +48,7 @@ jobs:
         echo "Files to deploy:"
         ls dist/my-angular9-app
 
-        # Test SMB connection (without modifying files)
+        # Test SMB connection (without modifying files))
         echo "$IIS_PASSWORD" | smbclient $IIS_DEPLOY_PATH -U $IIS_USER -c "ls"
 
         # Deploy files
