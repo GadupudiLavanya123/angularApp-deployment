@@ -10,28 +10,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout the code
-    - name: Checkout code
-      uses: actions/checkout@v2
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Set up SSH key for authentication
-    - name: Set up SSH key
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      # Set up Node.js environment (Angular requires Node.js)
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # Use Node.js version 16 for Angular
 
-    # Install Angular CLI and build the app
-    - name: Install Angular CLI
-      run: |
-        npm install -g @angular/cli
+      # Install Angular CLI and build the app
+      - name: Install Angular CLI
+        run: |
+          npm install -g @angular/cli
 
-    - name: Build the Angular app
-      run: |
-        npm install
-        ng build --prod
+      # Install dependencies
+      - name: Install dependencies
+        run: npm install
 
-    # Deploy the Angular app to IIS server via SSH
-    - name: Deploy to IIS Server
-      run: |
-        ssh -o StrictHostKeyChecking=no lavig@laptop-al3ulk55 "mkdir -p C:/inetpub/wwwroot/my-angular-app"
-        scp -r ./dist/* lavig@laptop-al3ulk55:C:/inetpub/wwwroot/my-angular-app/
+      # Build the Angular project in production mode
+      - name: Build Angular project
+        run: npm run build -- --prod
+
+      # Set up SSH key for authentication
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # Deploy the Angular app to IIS server via SSH
+      - name: Deploy to IIS Server
+        run: |
+          ssh -o StrictHostKeyChecking=no lavig@laptop-al3ulk55 "mkdir -p C:/inetpub/wwwroot/my-angular-app"
+          scp -r ./dist/* lavig@laptop-al3ulk55:C:/inetpub/wwwroot/my-angular-app/
