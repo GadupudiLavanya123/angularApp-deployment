@@ -1,56 +1,62 @@
-name: IIS server to Angular Deployment
+name: Deploy Angular to IIS Server
+
 on:
   push:
     branches:
-      - dev  # Trigger deployment when changes are pushed to the 'dev' branch
+      - main
 
 jobs:
   deploy:
-    runs-on: windows-latest  # Use a Windows runner for IIS deployment
+    runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the code
-      - name: Checkout code
-        uses: actions/checkout@v2
+    # Step 1: Checkout the code
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      # Step 2: Set up Node.js (for building the Angular app)
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'  # Use the Node.js version compatible with your Angular app
+    # Step 2: Set up Node.js
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
 
-      # Step 3: Install Angular CLI and dependencies
-      - name: Install dependencies
-        run: |
-          npm install -g @angular/cli
-          npm ci
+    # Step 3: Install dependencies and build Angular
+    - name: Install dependencies
+      run: npm install
 
-      # Step 4: Build the Angular application
-      - name: Build Angular app
-        run: ng build --configuration production  # Adjust the build configuration as need
+    - name: Build Angular app
+      run: npm run build -- --prod
 
-      # Step 5: Copy files to IIS server
-      - name: Deploy to IIS server
-        run: |
-          $errorActionPreference = "Stop"
+    # Step 4: Deploy to IIS server using WinRM
+    - name: Deploy to IIS server
+      env:
+        IIS_SERVER_IP: ${{ secrets.IIS_SERVER_IP }}
+        IIS_USER: ${{ secrets.IIS_USER }}
+        IIS_PASSWORD: ${{ secrets.IIS_PASSWORD }}
+        IIS_DEPLOY_PATH: ${{ secrets.IIS_DEPLOY_PATH }}
+      run: |
+        echo "Deploying to IIS server..."
 
-          # Set IIS server details
-          $server = " 192.168.0.103"  # Replace with your IIS server's IP address
-          $username = "Lavanya Gadupudi"  # Replace with your username
-          $password = "${{ secrets.IIS_PASSWORD }}"  # Store your password as a secret in GitHub
-          $sourceDir = "$(System.DefaultWorkingDirectory)/dist/my-angular9-app"  # Path to the built Angular app
-          $destinationDir = "C:\inetpub\wwwroot\my-angular9-app"  # Replace with your IIS site directory
+        # Use PowerShell Remoting over WinRM to copy files and restart IIS
+        pwsh -Command "
+        $ErrorActionPreference = 'Stop'
+        
+        # Define credentials for IIS user
+        \$securePassword = ConvertTo-SecureString '$IIS_PASSWORD' -AsPlainText -Force
+        \$credential = New-Object System.Management.Automation.PSCredential ('$IIS_USER', \$securePassword)
+        
+        # Define IIS server and deployment path
+        \$IIS_SERVER = '$IIS_SERVER_IP'
+        \$DEPLOY_PATH = '$IIS_DEPLOY_PATH'
+        
+        # Copy files to IIS server
+        Invoke-Command -ComputerName \$IIS_SERVER -Credential \$credential -ScriptBlock {
+            param(\$deployPath)
+            Copy-Item -Path './dist/my-angular9-app/*' -Destination \$deployPath -Recurse -Force
+        } -ArgumentList \$DEPLOY_PATH
 
-          # Create a credential object
-          $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-          $credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
-
-          # Copy files to the IIS server using SMB
-          Copy-Item -Path $sourceDir\* -Destination "\\$server\$destinationDir" -Recurse -Force
-
-      # Step 6: Restart IIS (optional but recommended)
-      - name: Restart IIS
-        run: |
-          Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
-            Restart-Service -Name "W3SVC"  # Restart IIS server
-          }
+        # Restart IIS if needed
+        Invoke-Command -ComputerName \$IIS_SERVER -Credential \$credential -ScriptBlock {
+            iisreset
+        }
+        "
