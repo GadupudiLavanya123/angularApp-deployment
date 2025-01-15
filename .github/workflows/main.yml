@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout the code
+    # Step 1: Checkout code
     - name: Checkout code
       uses: actions/checkout@v3
 
@@ -20,14 +20,21 @@ jobs:
       with:
         node-version: '16'
 
-    # Step 3: Install dependencies and build Angular
+    # Step 3: Install dependencies and build Angular project
     - name: Install dependencies
       run: npm install
 
     - name: Build Angular app
       run: npm run build -- --prod
 
-    # Step 4: Deploy to IIS server using WinRM
+    # Step 4: Install pywinrm (WinRM client)
+    - name: Install pywinrm
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-pip
+        pip3 install pywinrm
+
+    # Step 5: Deploy to IIS Server using WinRM
     - name: Deploy to IIS server
       env:
         IIS_SERVER_IP: ${{ secrets.IIS_SERVER_IP }}
@@ -35,28 +42,27 @@ jobs:
         IIS_PASSWORD: ${{ secrets.IIS_PASSWORD }}
         IIS_DEPLOY_PATH: ${{ secrets.IIS_DEPLOY_PATH }}
       run: |
-        echo "Deploying to IIS server..."
+        echo "Deploying to IIS server at $IIS_SERVER_IP..."
 
-        # Use PowerShell Remoting over WinRM to copy files and restart IIS
-        pwsh -Command "
-        $ErrorActionPreference = 'Stop'
-        
-        # Define credentials for IIS user
-        \$securePassword = ConvertTo-SecureString '$IIS_PASSWORD' -AsPlainText -Force
-        \$credential = New-Object System.Management.Automation.PSCredential ('$IIS_USER', \$securePassword)
-        
-        # Define IIS server and deployment path
-        \$IIS_SERVER = '$IIS_SERVER_IP'
-        \$DEPLOY_PATH = '$IIS_DEPLOY_PATH'
-        
-        # Copy files to IIS server
-        Invoke-Command -ComputerName \$IIS_SERVER -Credential \$credential -ScriptBlock {
-            param(\$deployPath)
-            Copy-Item -Path './dist/my-angular9-app/*' -Destination \$deployPath -Recurse -Force
-        } -ArgumentList \$DEPLOY_PATH
+        # Python script to deploy files using WinRM
+        python3 - <<'EOF'
+        import winrm
+        import os
 
-        # Restart IIS if needed
-        Invoke-Command -ComputerName \$IIS_SERVER -Credential \$credential -ScriptBlock {
-            iisreset
-        }
-        "
+        # Define the IIS server credentials and path
+        IIS_SERVER = os.getenv('IIS_SERVER_IP')
+        IIS_USER = os.getenv('IIS_USER')
+        IIS_PASSWORD = os.getenv('IIS_PASSWORD')
+        DEPLOY_PATH = os.getenv('IIS_DEPLOY_PATH')
+
+        # Create the WinRM session to the IIS server
+        session = winrm.Session(f'http://{IIS_SERVER}:5985/wsman', auth=(IIS_USER, IIS_PASSWORD))
+
+        # Copy the build files to the IIS server
+        copy_command = f'Copy-Item -Path "./dist/my-angular9-app/*" -Destination "{DEPLOY_PATH}" -Recurse -Force'
+        session.run_ps(copy_command)
+
+        # Restart IIS service
+        restart_command = 'iisreset'
+        session.run_ps(restart_command)
+        EOF
