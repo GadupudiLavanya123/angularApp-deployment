@@ -54,5 +54,4 @@ jobs:
 
             # Restart IIS
             Invoke-Command -ComputerName $Server -ScriptBlock { iisreset }
-        errorActionPreference: Stop
-        failOnStandardError: false
+     
