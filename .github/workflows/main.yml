@@ -37,18 +37,22 @@ jobs:
       run: |
         echo "Deploying to IIS server at $IIS_SERVER_IP..."
 
+        # Show environment variables for debugging
+        echo "Deployment Path: $IIS_DEPLOY_PATH"
+
         # Install Samba client
         sudo apt-get update
         sudo apt-get install -y smbclient
 
-        # Mount the shared folder
+        # List files to be deployed
+        echo "Files to deploy:"
+        ls dist/my-angular9-app
+
+        # Test SMB connection (without modifying files)
+        echo "$IIS_PASSWORD" | smbclient $IIS_DEPLOY_PATH -U $IIS_USER -c "ls"
+
+        # Deploy files
         echo "$IIS_PASSWORD" | smbclient $IIS_DEPLOY_PATH -U $IIS_USER -c "
           del *;
           mput dist/my-angular9-app/*;
         "
-
-    # Step 5: Restart IIS service using HTTP call or custom script
-    - name: Restart IIS
-      run: |
-        echo "Restarting IIS service..."
-        curl -X POST "http://$IIS_SERVER_IP:5000/restart"
