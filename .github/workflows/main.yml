@@ -14,11 +14,17 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    # Copy Files to Deployment Directory
-    - name: Copy to Deployment Directory
+    # Publish Angular Application
+    - name: Install Dependencies and Build
+      run: |
+        npm install
+        npm run build -- --prod
+
+    # Copy Files to IIS Server's Shared Folder
+    - name: Deploy to IIS Shared Folder
       run: |
         $publishPath = "C:\inetpub\wwwroot\my-angular-app"
         if (!(Test-Path -Path $publishPath)) {
-          New-Item -ItemType Directory -Path $publishPath
+          Write-Error "Publish path does not exist on the IIS server."
         }
-        Copy-Item -Path .\* -Destination $publishPath -Recurse -Force
+        Copy-Item -Path .\dist\my-angular-app\* -Destination $publishPath -Recurse -Force
