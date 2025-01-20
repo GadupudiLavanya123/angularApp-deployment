@@ -26,7 +26,7 @@ jobs:
     - name: Build Angular project
       run: npm run build -- --prod
 
-    # Step 3: Deploy to IIS Server using PowerShell
+    # Step 3: Deploy to IIS Server using PowerShell as adminstator
     - name: Deploy to IIS Server
       run: |
         $IIS_SERVER = "\\${{ secrets.IIS_SERVER_IP }}\wwwroot"
