@@ -35,5 +35,5 @@ jobs:
 
       - name: Deploy to IIS Server
         run: |
-          ssh -o StrictHostKeyChecking=no lavig@fe80::4f8f:d8e8:a74a:d984%4 "mkdir -p C:/inetpub/wwwroot/my-angular-app"
-          scp -r ./dist/* lavig@fe80::4f8f:d8e8:a74a:d984%4:C:/inetpub/wwwroot/my-angular-app/
+          ssh -o StrictHostKeyChecking=no lavig@"[fe80::4f8f:d8e8:a74a:d984%4]" "mkdir -p C:/inetpub/wwwroot/my-angular-app"
+          scp -r ./dist/* lavig@"[fe80::4f8f:d8e8:a74a:d984%4]":C:/inetpub/wwwroot/my-angular-app/
