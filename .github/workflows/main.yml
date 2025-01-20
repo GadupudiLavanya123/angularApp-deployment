@@ -3,28 +3,40 @@ name: Deploy Angular App to IIS
 on:
   push:
     branches:
-      - main
+      - main  # Trigger deploy when pushing to the 'deploy' branch
 
 jobs:
   build-and-deploy:
-    runs-on: windows-latest
+    runs-on: windows-latest  # Runs on a Windows runner
 
     steps:
-    # Checkout repository
+    # Checkout the code from the repository
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    # Publish Angular Application
-    - name: Install Dependencies and Build
-      run: |
-        npm install
-        npm run build -- --prod
+    # Install Node.js and dependencies
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'  # You can change this to your required Node.js version
 
-    # Copy Files to IIS Server's Shared Folder
-    - name: Deploy to IIS Shared Folder
+    # Install Angular CLI globally
+    - name: Install Angular CLI
+      run: npm install -g @angular/cli
+
+    # Install project dependencies
+    - name: Install Dependencies
+      run: npm install
+
+    # Build the Angular application
+    - name: Build Angular Application
+      run: npm run build -- --prod
+
+    # Copy the build files to IIS directory
+    - name: Copy to IIS Deployment Directory
       run: |
         $publishPath = "C:\inetpub\wwwroot\my-angular-app"
         if (!(Test-Path -Path $publishPath)) {
-          Write-Error "Publish path does not exist on the IIS server."
+          New-Item -ItemType Directory -Path $publishPath  # Create the directory if it doesn't exist
         }
-        Copy-Item -Path .\dist\my-angular-app\* -Destination $publishPath -Recurse -Force
+        Copy-Item -Path .\dist\* -Destination $publishPath -Recurse -Force  # Copy build files to IIS directory
