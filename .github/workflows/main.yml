@@ -1,39 +1,24 @@
-name: Deploy to IIS
+name: Deploy Angular App to IIS
 
 on:
   push:
     branches:
-      - main
+      - deploy
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  build-and-deploy:
+    runs-on: windows-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    # Checkout repository
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
-      - name: Install Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-
-      - name: Install Angular CLI
-        run: |
-          npm install -g @angular/cli
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build Angular project
-        run: npm run build -- --prod
-
-      - name: Set up SSH key
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Deploy to IIS Server
-        run: |
-          ssh -o StrictHostKeyChecking=no lavig@"[fe80::4f8f:d8e8:a74a:d984%4]" "mkdir -p C:/inetpub/wwwroot/my-angular-app"
-          scp -r ./dist/* lavig@"[fe80::4f8f:d8e8:a74a:d984%4]":C:/inetpub/wwwroot/my-angular-app/
+    # Copy Files to Deployment Directory
+    - name: Copy to Deployment Directory
+      run: |
+        $publishPath = "C:\inetpub\wwwroot\my-angular-app"
+        if (!(Test-Path -Path $publishPath)) {
+          New-Item -ItemType Directory -Path $publishPath
+        }
+        Copy-Item -Path .\* -Destination $publishPath -Recurse -Force
