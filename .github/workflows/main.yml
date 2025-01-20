@@ -3,7 +3,7 @@ name: Deploy Angular App to IIS
 on:
   push:
     branches:
-      - deploy
+      - main
 
 jobs:
   build-and-deploy:
