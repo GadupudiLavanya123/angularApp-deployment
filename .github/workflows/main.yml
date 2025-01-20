@@ -3,40 +3,41 @@ name: Deploy Angular App to IIS
 on:
   push:
     branches:
-      - main  # Trigger deploy when pushing to the 'deploy' branch
+      - main  # Change to the branch you want to deploy from
 
 jobs:
-  build-and-deploy:
-    runs-on: windows-latest  # Runs on a Windows runner
+  deploy:
+    runs-on: windows-latest  # Use Windows runner for better compatibility with IIS
 
     steps:
-    # Checkout the code from the repository
-    - name: Checkout Code
+    # Step 1: Checkout the code
+    - name: Checkout code
       uses: actions/checkout@v3
 
-    # Install Node.js and dependencies
-    - name: Install Node.js
+    # Step 2: Install Node.js and build the Angular application
+    - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16'  # You can change this to your required Node.js version
+        node-version: '16'
 
-    # Install Angular CLI globally
-    - name: Install Angular CLI
-      run: npm install -g @angular/cli
-
-    # Install project dependencies
-    - name: Install Dependencies
+    - name: Install dependencies
       run: npm install
 
-    # Build the Angular application
-    - name: Build Angular Application
+    - name: Build Angular project
       run: npm run build -- --prod
 
-    # Copy the build files to IIS directory
-    - name: Copy to IIS Deployment Directory
+    # Step 3: Deploy to IIS Server using PowerShell
+    - name: Deploy to IIS Server
       run: |
-        $publishPath = "C:\inetpub\wwwroot\my-angular-app"
-        if (!(Test-Path -Path $publishPath)) {
-          New-Item -ItemType Directory -Path $publishPath  # Create the directory if it doesn't exist
-        }
-        Copy-Item -Path .\dist\* -Destination $publishPath -Recurse -Force  # Copy build files to IIS directory
+        $IIS_SERVER = "\\${{ secrets.IIS_SERVER_IP }}\wwwroot"
+        $USERNAME = "${{ secrets.IIS_USER }}"
+        $PASSWORD = "${{ secrets.IIS_PASSWORD }}"
+
+        # Map network drive to IIS shared folder (using Windows)
+        net use $IIS_SERVER /user:$USERNAME $PASSWORD
+
+        # Copy the Angular build to IIS folder
+        Copy-Item -Path "./dist/*" -Destination "$IIS_SERVER\my-angular-app" -Recurse -Force
+
+        # Disconnect the mapped network drive after deployment
+        net use $IIS_SERVER /delete
