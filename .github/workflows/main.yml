@@ -29,7 +29,7 @@ jobs:
     # Step 3: Deploy to IIS Server using PowerShell as adminstator
     - name: Deploy to IIS Server
       run: |
-        $IIS_SERVER = "\\${{ secrets.IIS_SERVER_IP }}\wwwroot"
+        $IIS_SERVER = "${{ secrets.IIS_SERVER_IP }}"
         $USERNAME = "${{ secrets.IIS_USER }}"
         $PASSWORD = "${{ secrets.IIS_PASSWORD }}"
 
