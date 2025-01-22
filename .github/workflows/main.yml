@@ -37,7 +37,7 @@ jobs:
         net use $IIS_SERVER /user:$USERNAME $PASSWORD
 
         # Copy the Angular build to IIS folder
-        Copy-Item -Path "./dist/*" -Destination "$IIS_SERVER\my-angular-app" -Recurse -Force
+        Copy-Item -Path "./dist/*" -Destination "$IIS_SERVER\my-angular9-app" -Recurse -Force
 
         # Disconnect the mapped network drive after deployment
         net use $IIS_SERVER /delete
