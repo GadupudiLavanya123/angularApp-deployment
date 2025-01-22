@@ -32,12 +32,18 @@ jobs:
         $IIS_SERVER = "${{ secrets.IIS_SERVER_IP }}"
         $USERNAME = "${{ secrets.IIS_USER }}"
         $PASSWORD = "${{ secrets.IIS_PASSWORD }}"
+        $DESTINATION_PATH = "\\$IIS_SERVER\wwwroot\my-angular9-app"
+
+        # Log the path and verify if the UNC path is correct
+        Write-Host "IIS Server: $IIS_SERVER"
+        Write-Host "Destination Path: $DESTINATION_PATH"
 
         # Map network drive to IIS shared folder (using Windows)
         net use $IIS_SERVER /user:$USERNAME $PASSWORD
 
         # Copy the Angular build to IIS folder
-        Copy-Item -Path "./dist/*" -Destination "$IIS_SERVER\my-angular9-app" -Recurse -Force
+        Copy-Item -Path "./dist/*" -Destination $DESTINATION_PATH -Recurse -Force
 
         # Disconnect the mapped network drive after deployment
         net use $IIS_SERVER /delete
+        
