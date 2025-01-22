@@ -29,9 +29,9 @@ jobs:
     # Step 3: Deploy to IIS Server using PowerShell as adminstator
     - name: Deploy to IIS Server
       run: |
-        $IIS_SERVER = "${{ secrets.IIS_SERVER_IP }}"
-        $USERNAME = "${{ secrets.IIS_USER }}"
-        $PASSWORD = "${{ secrets.IIS_PASSWORD }}"
+        $IIS_SERVER = "C:\inetpub"
+        $USERNAME = "lavig"
+        $PASSWORD = "Lavanya@123"
         $DESTINATION_PATH = "\\$IIS_SERVER\wwwroot\my-angular9-app"
 
         # Log the path and verify if the UNC path is correct
