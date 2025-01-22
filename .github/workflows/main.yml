@@ -30,7 +30,7 @@ jobs:
     - name: Deploy to IIS Server
       run: |
        # Define source and destination directories
-       $source = "C:\Users\lavig\Downloads\angularApp-deployment-main\angularApp-deployment-main\dist"
+       $source = "C:\Users\lavig\Downloads\angularApp-deployment-main\angularApp-deployment-main\dist\"
        $destination = "C:\inetpub\wwwroot\my-angular9-app"
         
         # Check if the destination folder exists; if not, create it
@@ -39,6 +39,6 @@ jobs:
         }
         
         # Copy files from source to destination
-        Copy-Item -Path "$source\*" -Destination $destination -Recurse -Force
+        Copy-Item -Path $source -Destination $destination -Recurse -Force
         
         Write-Host "Files copied successfully from $source to $destination"
