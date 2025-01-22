@@ -29,21 +29,16 @@ jobs:
     # Step 3: Deploy to IIS Server using PowerShell as adminstator
     - name: Deploy to IIS Server
       run: |
-        $IIS_SERVER = "C:\inetpub"
-        $USERNAME = "lavig"
-        $PASSWORD = "Lavanya@123"
-        $DESTINATION_PATH = "\\$IIS_SERVER\wwwroot\my-angular9-app"
-
-        # Log the path and verify if the UNC path is correct
-        Write-Host "IIS Server: $IIS_SERVER"
-        Write-Host "Destination Path: $DESTINATION_PATH"
-
-        # Map network drive to IIS shared folder (using Windows)
-        net use $IIS_SERVER /user:$USERNAME $PASSWORD
-
-        # Copy the Angular build to IIS folder
-        Copy-Item -Path "./dist/*" -Destination $DESTINATION_PATH -Recurse -Force
-
-        # Disconnect the mapped network drive after deployment
-        net use $IIS_SERVER /delete
+       # Define source and destination directories
+       $source = "C:\Users\lavig\Downloads\angularApp-deployment-main\angularApp-deployment-main\dist"
+       $destination = "C:\inetpub\wwwroot\my-angular9-app"
         
+        # Check if the destination folder exists; if not, create it
+        if (-not (Test-Path -Path $destination)) {
+            New-Item -ItemType Directory -Path $destination
+        }
+        
+        # Copy files from source to destination
+        Copy-Item -Path "$source\*" -Destination $destination -Recurse -Force
+        
+        Write-Host "Files copied successfully from $source to $destination"
