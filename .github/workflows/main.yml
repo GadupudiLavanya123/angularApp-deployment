@@ -26,8 +26,8 @@ jobs:
     - name: Build Angular project
       run: npm run build -- --prod
 
-    # Step 3: Deploy to IIS Server using PowerShell as administrator
-    - name: Deploy to IIS Server
+    # Step 3: 
+    - name: 
       shell: pwsh  # Use PowerShell Core for better compatibility
       run: |
         # Define source and destination directories
@@ -45,37 +45,7 @@ jobs:
             New-Item -ItemType Directory -Path $destination
         }
         
-        # Sync changes to the destination directory
-        Write-Host "Syncing files from $source to $destination..."
-        robocopy $source $destination /MIR /Z /R:3 /W:5
-        if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1) {
-            throw "File synchronization failed with error code $LASTEXITCODE"
-        }
-
-        Write-Host "Files synced successfully from $source to $destination"
-
-        # Restart IIS application pool or site
-        $siteName = "my-angular9-app"  # Replace with your app pool name
-        $iisSitePath = "IIS:\Sites\my-angular9-app"  # Replace with your IIS site path
-        Write-Host "Restarting IIS site: $siteName..."
+        # Copy files from source to destination
+        Copy-Item -Path $source\* -Destination $destination -Recurse -Force
         
-        # Restart the IIS application pool
-        if (-not (Test-Path $iisSitePath)) {
-            throw "IIS site path '$iisSitePath' does not exist. Check your IIS configuration."
-        }
-        Restart-WebItem -PSPath $iisSitePath  # Restart IIS site
-        Write-Host "IIS site restarted successfully"
-
-    # Step 4: Test application availability
-    - name: Test application availability
-      shell: pwsh
-      run: |
-        $url = "http://localhost/"  # Replace with your desired URL
-        Write-Host "Testing application availability at $url..."
-        
-        $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 30
-        if ($response.StatusCode -eq 200) {
-            Write-Host "Application is accessible at $url"
-        } else {
-            throw "Application is not accessible. Status code: $($response.StatusCode)"
-        }
+        Write-Host "Files copied successfully from $source to $destination"
