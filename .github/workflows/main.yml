@@ -7,14 +7,12 @@ on:
 
 jobs:
   deploy:
-    runs-on: windows-latest  # Use Windows runner for better compatibility with IIS
+    runs-on: windows-latest
 
     steps:
-    # Step 1: Checkout the code
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Install Node.js and build the Angular application
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
@@ -24,20 +22,27 @@ jobs:
       run: npm install
 
     - name: Build Angular project
-      run: npm run build --configuration=production  # Ensures production build
+      run: npm run build --configuration=production
 
-    # Step 3: Deploy to IIS
+    - name: Debug Build Output
+      shell: pwsh
+      run: |
+        Get-ChildItem -Path "${{ github.workspace }}/dist" -Recurse
+
     - name: Deploy to IIS
       shell: pwsh
       run: |
         # Define paths
-        $workspace = "${{ github.workspace }}"  # GitHub Actions workspace
+        $workspace = "${{ github.workspace }}"  
         $source = Join-Path -Path $workspace -ChildPath "dist/my-angular9-app"
         $destination = "C:\inetpub\wwwroot\my-angular9-app"
 
-        # Check if source directory exists
+        # Debugging logs
+        Write-Host "Workspace: $workspace"
+        Write-Host "Build Output Path: $source"
+
         if (-not (Test-Path -Path $source)) {
-            throw "Source directory '$source' does not exist. Ensure the build step completed successfully."
+            throw "Source directory '$source' does not exist! Check your angular.json outputPath."
         }
 
         # Ensure destination exists and clear old files
@@ -47,19 +52,20 @@ jobs:
             New-Item -ItemType Directory -Path $destination
         }
 
+        # Set permissions
+        icacls $destination /grant Everyone:(OI)(CI)F /T /Q
+
         # Copy new build files to IIS folder
         Copy-Item -Path "$source\*" -Destination $destination -Recurse -Force
         
         Write-Host "Files copied successfully from $source to $destination"
 
-    # Step 4: Restart IIS to apply changes
     - name: Restart IIS
       shell: pwsh
       run: |
         iisreset /restart
         Write-Host "IIS restarted successfully"
 
-    # Step 5: Print Application URL
     - name: Print Application URL
       shell: pwsh
       run: |
