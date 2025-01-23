@@ -42,6 +42,10 @@ jobs:
         # Copy build files to IIS folder
         Copy-Item -Path "$source\*" -Destination $destination -Recurse -Force
 
+        - name: List Workspace Contents
+          run: Get-ChildItem -Path "${{ github.workspace }}" -Recurse
+          shell: pwsh
+
         # Restart IIS to apply changes
         iisreset /restart
 
