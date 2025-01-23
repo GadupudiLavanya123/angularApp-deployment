@@ -26,12 +26,19 @@ jobs:
     - name: Build Angular project
       run: npm run build -- --prod
 
-    # Step 3: Deploy to IIS Server using PowerShell as adminstator
+    # Step 3: Deploy to IIS Server using PowerShell as administrator
     - name: Deploy to IIS Server
+      shell: pwsh  # Use PowerShell Core for better compatibility
       run: |
-       # Define source and destination directories
-       $source = "C:\Angular\dist\my-angular9-app"
-       $destination = "C:\inetpub\wwwroot\my-angular9-app"
+        # Define source and destination directories
+        $workspace = "${{ github.workspace }}"  # GitHub Actions workspace
+        $source = Join-Path -Path $workspace -ChildPath "dist/my-angular9-app"
+        $destination = "C:\inetpub\wwwroot\my-angular9-app"
+        
+        # Check if the source directory exists
+        if (-not (Test-Path -Path $source)) {
+            throw "Source directory '$source' does not exist. Ensure the build step completed successfully."
+        }
         
         # Check if the destination folder exists; if not, create it
         if (-not (Test-Path -Path $destination)) {
@@ -39,6 +46,6 @@ jobs:
         }
         
         # Copy files from source to destination
-        Copy-Item -Path $source -Destination $destination -Recurse -Force
+        Copy-Item -Path $source\* -Destination $destination -Recurse -Force
         
         Write-Host "Files copied successfully from $source to $destination"
