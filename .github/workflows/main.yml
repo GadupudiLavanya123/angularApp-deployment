@@ -45,7 +45,17 @@ jobs:
             New-Item -ItemType Directory -Path $destination
         }
         
-        # Copy files from source to destination
-        Copy-Item -Path $source\* -Destination $destination -Recurse -Force
-        
-        Write-Host "Files copied successfully from $source to $destination"
+        # Sync changes to the destination directory
+        Write-Host "Syncing files from $source to $destination..."
+        robocopy $source $destination /MIR /Z /R:3 /W:5
+        if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1) {
+            throw "File synchronization failed with error code $LASTEXITCODE"
+        }
+
+        Write-Host "Files synced successfully from $source to $destination"
+
+        # Restart IIS application pool or site
+        $siteName = "my-angular9-app"  # Replace with your IIS site name if different
+        Write-Host "Restarting IIS site: $siteName..."
+        Restart-WebAppPool -Name $siteName  # Restart application pool (requires IIS module)
+        Write-Host "IIS site restarted successfully"
