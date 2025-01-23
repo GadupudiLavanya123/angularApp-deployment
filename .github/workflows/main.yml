@@ -24,28 +24,44 @@ jobs:
       run: npm install
 
     - name: Build Angular project
-      run: npm run build -- --prod
+      run: npm run build --configuration=production  # Ensures production build
 
-    # Step 3: 
-    - name: 
-      shell: pwsh  # Use PowerShell Core for better compatibility
+    # Step 3: Deploy to IIS
+    - name: Deploy to IIS
+      shell: pwsh
       run: |
-        # Define source and destination directories
+        # Define paths
         $workspace = "${{ github.workspace }}"  # GitHub Actions workspace
         $source = Join-Path -Path $workspace -ChildPath "dist/my-angular9-app"
         $destination = "C:\inetpub\wwwroot\my-angular9-app"
-        
-        # Check if the source directory exists
+
+        # Check if source directory exists
         if (-not (Test-Path -Path $source)) {
             throw "Source directory '$source' does not exist. Ensure the build step completed successfully."
         }
-        
-        # Check if the destination folder exists; if not, create it
-        if (-not (Test-Path -Path $destination)) {
+
+        # Ensure destination exists and clear old files
+        if (Test-Path -Path $destination) {
+            Remove-Item -Path "$destination\*" -Recurse -Force
+        } else {
             New-Item -ItemType Directory -Path $destination
         }
-        
-        # Copy files from source to destination
-        Copy-Item -Path $source\* -Destination $destination -Recurse -Force
+
+        # Copy new build files to IIS folder
+        Copy-Item -Path "$source\*" -Destination $destination -Recurse -Force
         
         Write-Host "Files copied successfully from $source to $destination"
+
+    # Step 4: Restart IIS to apply changes
+    - name: Restart IIS
+      shell: pwsh
+      run: |
+        iisreset /restart
+        Write-Host "IIS restarted successfully"
+
+    # Step 5: Disable IIS caching to ensure new files are served
+    - name: Disable IIS Cache
+      shell: pwsh
+      run: |
+        Set-WebConfigurationProperty -pspath 'MACHINE/WEBROOT/APPHOST' -filter "system.webServer/staticContent" -name "clientCache.cacheControlMode" -value "DisableCache"
+        Write-Host "IIS cache disabled"
