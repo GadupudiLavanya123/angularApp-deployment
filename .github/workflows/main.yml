@@ -59,9 +59,9 @@ jobs:
         iisreset /restart
         Write-Host "IIS restarted successfully"
 
-    # Step 5: Disable IIS caching to ensure new files are served
-    - name: Disable IIS Cache
+    # Step 5: Print Application URL
+    - name: Print Application URL
       shell: pwsh
       run: |
-        Set-WebConfigurationProperty -pspath 'MACHINE/WEBROOT/APPHOST' -filter "system.webServer/staticContent" -name "clientCache.cacheControlMode" -value "DisableCache"
-        Write-Host "IIS cache disabled"
+        $appUrl = "http://$(hostname)/my-angular9-app"
+        Write-Host "Your application is deployed and available at: $appUrl"
