@@ -3,71 +3,46 @@ name: Deploy Angular App to IIS
 on:
   push:
     branches:
-      - main  # Change to the branch you want to deploy from
+      - main  # Trigger the workflow on changes to the 'main' branch
 
 jobs:
   deploy:
-    runs-on: windows-latest
+    runs-on: windows-latest  # Use a Windows runner (or self-hosted runner on IIS)
 
     steps:
+    # Step 1: Checkout the Code
     - name: Checkout code
       uses: actions/checkout@v3
 
+    # Step 2: Set Up Node.js and Install Dependencies
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16'
+        node-version: '16'  # Specify the Node.js version
 
     - name: Install dependencies
       run: npm install
 
+    # Step 3: Build the Angular Application
     - name: Build Angular project
-      run: npm run build --configuration=production
+      run: npm run build -- --prod
 
-    - name: Debug Build Output
-      shell: pwsh
-      run: |
-        Get-ChildItem -Path "${{ github.workspace }}/dist" -Recurse
-
+    # Step 4: Deploy to IIS
     - name: Deploy to IIS
-      shell: pwsh
       run: |
         # Define paths
-        $workspace = "${{ github.workspace }}"  
-        $source = Join-Path -Path $workspace -ChildPath "dist/my-angular9-app"
-        $destination = "C:\inetpub\wwwroot\my-angular9-app"
+        $source = ".\dist\my-angular9-app"  # Angular build output path
+        $destination = "C:\inetpub\wwwroot\my-angular9-app"  # IIS app folder
 
-        # Debugging logs
-        Write-Host "Workspace: $workspace"
-        Write-Host "Build Output Path: $source"
-
-        if (-not (Test-Path -Path $source)) {
-            throw "Source directory '$source' does not exist! Check your angular.json outputPath."
-        }
-
-        # Ensure destination exists and clear old files
-        if (Test-Path -Path $destination) {
-            Remove-Item -Path "$destination\*" -Recurse -Force
-        } else {
+        # Ensure the destination folder exists
+        if (-not (Test-Path -Path $destination)) {
             New-Item -ItemType Directory -Path $destination
         }
 
-        # Set permissions
-        icacls $destination /grant Everyone:(OI)(CI)F /T /Q
-
-        # Copy new build files to IIS folder
+        # Copy build files to IIS folder
         Copy-Item -Path "$source\*" -Destination $destination -Recurse -Force
-        
-        Write-Host "Files copied successfully from $source to $destination"
 
-    - name: Restart IIS
-      shell: pwsh
-      run: |
+        # Restart IIS to apply changes
         iisreset /restart
-        Write-Host "IIS restarted successfully"
 
-    - name: Print Application URL
-      shell: pwsh
-      run: |
-        $appUrl = "http://$(hostname)/my-angular9-app"
-        Write-Host "Your application is deployed and available at: $appUrl"
+        Write-Host "Deployment complete. App is live at: http://localhost/my-angular9-app"
