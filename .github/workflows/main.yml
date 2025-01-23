@@ -63,5 +63,5 @@ jobs:
     - name: Print Application URL
       shell: pwsh
       run: |
-        $appUrl = "http://localhost/my-angular9-app"
+        $appUrl = "http://$(hostname)/my-angular9-app"
         Write-Host "Your application is deployed and available at: $appUrl"
