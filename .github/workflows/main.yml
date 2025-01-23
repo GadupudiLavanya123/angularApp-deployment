@@ -31,7 +31,7 @@ jobs:
     - name: Deploy to IIS
       run: |
         # Define paths
-        $source = ".\dist\my-angular9-app"  # Angular build output path
+        $source = "${{ github.workspace }}\dist\my-angular9-app"  # Angular build output path
         $destination = "C:\inetpub\wwwroot\my-angular9-app"  # IIS app folder
         
         # Ensure the destination folder exists
@@ -47,8 +47,3 @@ jobs:
         
         Write-Host "Deployment complete. App is live at: http://localhost/my-angular9-app"
       shell: pwsh  # Use PowerShell Core for running the deployment script
-
-    # Step 5: List Workspace Contents (Optional Debugging Step)
-    - name: List Workspace Contents
-      run: Get-ChildItem -Path . -Recurse
-      shell: pwsh
