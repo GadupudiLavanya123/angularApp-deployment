@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: windows-latest  # Use a Windows runner (or self-hosted runner on IIS)
+    runs-on: windows-latest  # Use a Windows runner (or self-hosted runner with IIS installed)
 
     steps:
     # Step 1: Checkout the Code
@@ -33,20 +33,22 @@ jobs:
         # Define paths
         $source = ".\dist\my-angular9-app"  # Angular build output path
         $destination = "C:\inetpub\wwwroot\my-angular9-app"  # IIS app folder
-
+        
         # Ensure the destination folder exists
         if (-not (Test-Path -Path $destination)) {
             New-Item -ItemType Directory -Path $destination
         }
-
+        
         # Copy build files to IIS folder
         Copy-Item -Path "$source\*" -Destination $destination -Recurse -Force
-
-        - name: List Workspace Contents
-          run: Get-ChildItem -Path "${{ github.workspace }}" -Recurse
-          shell: pwsh
-
+        
         # Restart IIS to apply changes
         iisreset /restart
-
+        
         Write-Host "Deployment complete. App is live at: http://localhost/my-angular9-app"
+      shell: pwsh  # Use PowerShell Core for running the deployment script
+
+    # Step 5: List Workspace Contents (Optional Debugging Step)
+    - name: List Workspace Contents
+      run: Get-ChildItem -Path . -Recurse
+      shell: pwsh
