@@ -55,7 +55,27 @@ jobs:
         Write-Host "Files synced successfully from $source to $destination"
 
         # Restart IIS application pool or site
-        $siteName = "my-angular9-app"  # Replace with your IIS site name if different
+        $siteName = "my-angular9-app"  # Replace with your app pool name
+        $iisSitePath = "IIS:\Sites\my-angular9-app"  # Replace with your IIS site path
         Write-Host "Restarting IIS site: $siteName..."
-        Restart-WebAppPool -Name $siteName  # Restart application pool (requires IIS module)
+        
+        # Restart the IIS application pool
+        if (-not (Test-Path $iisSitePath)) {
+            throw "IIS site path '$iisSitePath' does not exist. Check your IIS configuration."
+        }
+        Restart-WebItem -PSPath $iisSitePath  # Restart IIS site
         Write-Host "IIS site restarted successfully"
+
+    # Step 4: Test application availability
+    - name: Test application availability
+      shell: pwsh
+      run: |
+        $url = "http://localhost/"  # Replace with your desired URL
+        Write-Host "Testing application availability at $url..."
+        
+        $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 30
+        if ($response.StatusCode -eq 200) {
+            Write-Host "Application is accessible at $url"
+        } else {
+            throw "Application is not accessible. Status code: $($response.StatusCode)"
+        }
