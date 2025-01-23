@@ -31,7 +31,7 @@ jobs:
     - name: Deploy to IIS
       run: |
         # Define paths
-        $source = "${{ github.workspace }}\dist\my-angular9-app"  # Angular build output path
+        $source = "D:\a\angularApp-deployment\angularApp-deployment\dist\my-angular9-app"  # Angular build output path
         $destination = "C:\inetpub\wwwroot\my-angular9-app"  # IIS app folder
         
         # Ensure the destination folder exists
