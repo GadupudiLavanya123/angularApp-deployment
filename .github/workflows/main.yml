@@ -20,12 +20,15 @@ jobs:
       with:
         node-version: '16'  # Specify the Node.js version
 
-    - name: Install dependencies
+    - name: Install Angular CLI
+      run: npm install -g @angular/cli@14  # Specify the Angular CLI version to use
+
+    - name: Install project dependencies
       run: npm install
 
     # Step 3: Build the Angular Application
     - name: Build Angular project
-      run: npm run build -- --prod
+      run: ng build --configuration production  # Build the Angular project for production
 
     # Step 4: Deploy to IIS
     - name: Deploy to IIS
@@ -33,17 +36,32 @@ jobs:
         # Define paths
         $source = "D:\a\angularApp-deployment\angularApp-deployment\dist\my-angular9-app"  # Angular build output path
         $destination = "C:\inetpub\wwwroot\my-angular9-app"  # IIS app folder
-        
-        # Ensure the destination folder exists
+
+        Write-Host "Source Path: $source"
+        Write-Host "Destination Path: $destination"
+
+        # Check source path
+        if (-not (Test-Path -Path $source)) {
+            Write-Error "Source path does not exist: $source"
+            exit 1
+        } else {
+            Write-Host "Source path exists: $source"
+        }
+
+        # Ensure destination folder exists
         if (-not (Test-Path -Path $destination)) {
+            Write-Host "Destination does not exist. Creating it."
             New-Item -ItemType Directory -Path $destination
         }
-        
-        # Copy build files to IIS folder
+
+        # Clean destination folder
+        Remove-Item -Path "$destination\*" -Recurse -Force -ErrorAction SilentlyContinue
+
+        # Copy files
         Copy-Item -Path "$source\*" -Destination $destination -Recurse -Force
-        
-        # Restart IIS to apply changes
+        Write-Host "Files copied successfully."
+
+        # Restart IIS
         iisreset /restart
-        
-        Write-Host "Deployment complete. App is live at: http://localhost/my-angular9-app"
-      shell: pwsh  # Use PowerShell Core for running the deployment script
+        Write-Host "IIS restarted. Deployment complete."
+      shell: pwsh
