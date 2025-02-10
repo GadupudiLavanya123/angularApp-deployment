@@ -14,7 +14,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Set Up Node.js and Install Dependencies
+    # Step 2: Set Up Node.js and Install Angular CLI
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
@@ -23,18 +23,19 @@ jobs:
     - name: Install Angular CLI
       run: npm install -g @angular/cli@14  # Specify the Angular CLI version to use
 
+    # Step 3: Install Project Dependencies
     - name: Install project dependencies
       run: npm install
 
-    # Step 3: Build the Angular Application
+    # Step 4: Build the Angular Application
     - name: Build Angular project
       run: ng build --configuration production  # Build the Angular project for production
 
-    # Step 4: Deploy to IIS
+    # Step 5: Deploy to IIS
     - name: Deploy to IIS
       run: |
         # Define paths
-        $source = "D:\a\angularApp-deployment\angularApp-deployment\dist\my-angular9-app"  # Angular build output path
+        $source = "C:\Users\lavig\Downloads\angularApp-deployment-main\angularApp-deployment-main\dist\my-angular9-app"  # Angular build output path
         $destination = "C:\inetpub\wwwroot\my-angular9-app"  # IIS app folder
 
         Write-Host "Source Path: $source"
@@ -58,10 +59,19 @@ jobs:
         Remove-Item -Path "$destination\*" -Recurse -Force -ErrorAction SilentlyContinue
 
         # Copy files
+        Write-Host "Copying files..."
         Copy-Item -Path "$source\*" -Destination $destination -Recurse -Force
         Write-Host "Files copied successfully."
 
         # Restart IIS
         iisreset /restart
         Write-Host "IIS restarted. Deployment complete."
+      shell: pwsh
+
+    # Step 6: Open Application in Chrome
+    - name: Open Application in Chrome
+      run: |
+        $url = "http://localhost/my-angular9-app"
+        Write-Host "Opening application in browser: $url"
+        Start-Process "chrome.exe" -ArgumentList $url
       shell: pwsh
