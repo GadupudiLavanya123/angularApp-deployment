@@ -1,77 +1,50 @@
-name: Deploy Angular App to IIS
+name: Deploy Angular App to AWS IIS Server
 
 on:
   push:
     branches:
-      - main  # Trigger the workflow on changes to the 'main' branch
+      - main  # Trigger deployment on push to main
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   deploy:
-    runs-on: windows-latest  # Use a Windows runner (or self-hosted runner with IIS installed)
+    runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout the Code
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Step 2: Set Up Node.js and Install Angular CLI
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'  # Specify the Node.js version
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # Use your Node.js version
 
-    - name: Install Angular CLI
-      run: npm install -g @angular/cli@14  # Specify the Angular CLI version to use
+      - name: Install Angular CLI
+        run: npm install -g @angular/cli
 
-    # Step 3: Install Project Dependencies
-    - name: Install project dependencies
-      run: npm install
+      - name: Install dependencies
+        run: npm install
 
-    # Step 4: Build the Angular Application
-    - name: Build Angular project
-      run: ng build --configuration production  # Build the Angular project for production
+      - name: Build Angular App
+        run: ng build --prod
 
-    # Step 5: Deploy to IIS
-    - name: Deploy to IIS
-      run: |
-        # Define paths
-        $source = "C:\Users\lavig\Downloads\angularApp-deployment-main\angularApp-deployment-main\dist\my-angular9-app"  # Angular build output path
-        $destination = "C:\inetpub\wwwroot\my-angular9-app"  # IIS app folder
+      - name: Upload build files to IIS Server
+        uses: garygrossgarten/github-action-scp@v0.7.3
+        with:
+          local: dist/my-angular9-app
+          remote: C:\inetpub\wwwroot\my-angular9-app
+          host: ${{ secrets.AWS_SERVER_IP }}
+          username: ${{ secrets.AWS_SERVER_USER }}
+          password: ${{ secrets.AWS_SERVER_PASS }}
+          port: 22  # OpenSSH
 
-        Write-Host "Source Path: $source"
-        Write-Host "Destination Path: $destination"
-
-        # Check source path
-        if (-not (Test-Path -Path $source)) {
-            Write-Error "Source path does not exist: $source"
-            exit 1
-        } else {
-            Write-Host "Source path exists: $source"
-        }
-
-        # Ensure destination folder exists
-        if (-not (Test-Path -Path $destination)) {
-            Write-Host "Destination does not exist. Creating it."
-            New-Item -ItemType Directory -Path $destination
-        }
-
-        # Clean destination folder
-        Remove-Item -Path "$destination\*" -Recurse -Force -ErrorAction SilentlyContinue
-
-        # Copy files
-        Write-Host "Copying files..."
-        Copy-Item -Path "$source\*" -Destination $destination -Recurse -Force
-        Write-Host "Files copied successfully."
-
-        # Restart IIS
-        iisreset /restart
-        Write-Host "IIS restarted. Deployment complete."
-      shell: pwsh
-
-    # Step 6: Open Application in Chrome
-    - name: Open Application in Chrome
-      run: |
-        $url = "http://localhost/my-angular9-app"
-        Write-Host "Opening application in browser: $url"
-        Start-Process "chrome.exe" -ArgumentList $url
-      shell: pwsh
+      - name: Restart IIS on AWS
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.AWS_SERVER_IP }}
+          username: ${{ secrets.AWS_SERVER_USER }}
+          password: ${{ secrets.AWS_SERVER_PASS }}
+          port: 22
+          script: |
+            iisreset /restart
+            echo "Angular App deployed successfully to AWS IIS!"
