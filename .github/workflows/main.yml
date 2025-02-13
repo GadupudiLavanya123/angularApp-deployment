@@ -36,6 +36,7 @@ jobs:
           username: ${{ secrets.AWS_SERVER_USER }}
           password: ${{ secrets.AWS_SERVER_PASS }}
           port: 22
+          timeout: 60s
 
       - name: Restart IIS on AWS
         uses: appleboy/ssh-action@v0.1.7
