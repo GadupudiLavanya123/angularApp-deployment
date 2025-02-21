@@ -25,26 +25,29 @@ jobs:
         run: npm install
 
       - name: Build Angular project
-        run: npm run build -- --prod
+        run: npm run build --configuration=production
 
+      # Step 3: Upload build files to IIS Server using SCP
       - name: Upload build files to IIS Server
-        uses: garygrossgarten/github-action-scp@v0.7.3
+        uses: garygrossgarten/github-action-scp@v0.8.0
         with:
           local: dist/my-angular9-app
           remote: C:\inetpub\wwwroot\my-angular9-app
           host: ${{ secrets.AWS_SERVER_IP }}
           username: ${{ secrets.AWS_SERVER_USER }}
-          password: ${{ secrets.AWS_SERVER_PASS }}
+          privateKey: ${{ secrets.AWS_SERVER_SSH_KEY }}  # Use SSH key instead of password
           port: 22
-          timeout: 60s
+          verbose: true  # Enable verbose logging for debugging
 
+      # Step 4: Restart IIS on AWS after deployment
       - name: Restart IIS on AWS
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.AWS_SERVER_IP }}
           username: ${{ secrets.AWS_SERVER_USER }}
-          password: ${{ secrets.AWS_SERVER_PASS }}
+          privateKey: ${{ secrets.AWS_SERVER_SSH_KEY }}  # Use SSH key for authentication
           port: 22
           script: |
-            iisreset /restart
+            echo "Restarting IIS..."
+            sudo iisreset /restart
             echo "Angular App deployed successfully to AWS IIS!"
