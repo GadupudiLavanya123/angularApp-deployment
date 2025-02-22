@@ -39,13 +39,14 @@ jobs:
           AWS_REGION: "eu-north-1"
           SOURCE_DIR: "dist/my-angular9-app"
 
-      # Step 4: Deploy to IIS using AWS SSM
       - name: Deploy to IIS via AWS SSM
         run: |
+          echo "Sending SSM command to deploy build to IIS..."
           aws ssm send-command \
+            --instance-ids "${{ secrets.AWS_INSTANCE_ID }}" \
             --document-name "AWS-RunPowerShellScript" \
-            --targets "[{\"Key\":\"InstanceIds\",\"Values\":[\"${{ secrets.AWS_INSTANCE_ID }}\"]}]" \
-            --parameters "commands=['aws s3 sync s3://${{ secrets.AWS_S3_BUCKET }}/ C:\\inetpub\\wwwroot\\my-angular9-app /E /Y']" \
+            --comment "Deploy Angular build to IIS" \
+            --parameters commands="aws s3 sync s3://${{ secrets.AWS_S3_BUCKET }}/ C:\\inetpub\\wwwroot\\my-angular9-app /E /Y" \
             --region us-east-1
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
