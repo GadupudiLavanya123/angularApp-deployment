@@ -39,6 +39,7 @@ jobs:
           AWS_REGION: "eu-north-1"
           SOURCE_DIR: "dist/my-angular9-app"
 
+      # Step 4: Deploy to IIS via AWS SSM (Fixed Region)
       - name: Deploy to IIS via AWS SSM
         run: |
           echo "Sending SSM command to deploy build to IIS..."
@@ -47,7 +48,7 @@ jobs:
             --document-name "AWS-RunPowerShellScript" \
             --comment "Deploy Angular build to IIS" \
             --parameters commands="aws s3 sync s3://${{ secrets.AWS_S3_BUCKET }}/ C:\\inetpub\\wwwroot\\my-angular9-app /E /Y" \
-            --region us-east-1
+            --region eu-north-1
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
