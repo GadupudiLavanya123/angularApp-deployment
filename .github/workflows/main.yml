@@ -47,7 +47,7 @@ jobs:
             --instance-ids "${{ secrets.AWS_INSTANCE_ID }}" \
             --document-name "AWS-RunPowerShellScript" \
             --comment "Deploy Angular build to IIS" \
-           --parameters '{"commands":["& \"C:\\Program Files\\Amazon\\AWSCLIV2\\aws.exe\" s3 sync s3://${{ secrets.AWS_S3_BUCKET }}/ C:\\inetpub\\wwwroot\\my-angular9-app /E /Y"]}' \
+            --parameters '{"commands":["& \"C:\\Program Files\\Amazon\\AWSCLIV2\\aws.exe\" s3 sync s3://${{ secrets.AWS_S3_BUCKET }}/ C:\\inetpub\\wwwroot\\my-angular9-app"]}' \
             --region eu-north-1
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
