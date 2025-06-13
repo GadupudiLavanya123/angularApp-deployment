@@ -39,7 +39,7 @@ jobs:
           AWS_REGION: "eu-north-1"
           SOURCE_DIR: "dist/my-angular9-app"
 
-      # Step 4: Deploy to IIS via AWS SSM (Fixed Region)
+      # Step 4: Deploy to IIS via AWS SSM (Fixed Region).
       - name: Deploy to IIS via AWS SSM
         run: |
           echo "Sending SSM command to deploy build to IIS..."
